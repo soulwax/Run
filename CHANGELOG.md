@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.7.0 — 2026-10-11
+
+Snow flickers on glass\
+One voice crosses the thin wire\
+Names return in red
+
+Static blooms at dusk\
+A cold door forgets your name\
+Footprints face the dark
+
 ## 0.2.6.0 — 2026-10-09
 
 Snow forgets its road\

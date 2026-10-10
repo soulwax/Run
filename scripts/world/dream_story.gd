@@ -5,7 +5,7 @@ const PATH := "res://assets/dialogue/dream.json"
 const BEAT_COUNT := 4
 const SMALL_TALK_MAX_ROUNDS := 4
 const ID_PATTERN := "^[a-z][a-z0-9_-]{0,31}$"
-const MOTION_CUES := ["cut_tree", "delayed_steps", "lantern_witness", "tracks_stop", "tower_gaze", "window_gaze"]
+const MOTION_CUES := ["cut_tree", "delayed_steps", "lantern_witness", "tracks_stop", "tower_gaze", "window_gaze", "threshold_pause"]
 
 
 static func load_data() -> Dictionary:

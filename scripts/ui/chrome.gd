@@ -10,16 +10,17 @@ const PAPER_INK := Color(0.17, 0.14, 0.11)
 const BLOT := "xqvlmnrwzhk"
 const BLOT_INK := Color(0.42, 0.33, 0.25, 0.85)
 
-const PLATE := Color(0.05, 0.06, 0.08, 0.78)
+const PLATE := Color(0.055, 0.043, 0.047, 0.88)
 
 
 static func plate(margin: int = 14, radius: int = 6) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = PLATE
-	style.set_corner_radius_all(radius)
+	style.set_corner_radius_all(0)
 	style.set_content_margin_all(margin)
-	style.border_color = Color(1, 1, 1, 0.08)
+	style.border_color = Color(SIGNAL, 0.28)
 	style.set_border_width_all(1)
+	style.anti_aliasing = false
 	return style
 
 
@@ -37,12 +38,12 @@ static func paper(margin: int = 28) -> StyleBoxFlat:
 static func keycap(on_paper := false) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	var ink := PAPER_INK if on_paper else Color.WHITE
-	style.bg_color = Color(ink.r, ink.g, ink.b, 0.1 if on_paper else 0.12)
-	style.set_corner_radius_all(4)
+	style.bg_color = Color(ink.r, ink.g, ink.b, 0.08 if on_paper else 0.055)
+	style.set_corner_radius_all(0)
 	style.set_content_margin_all(6)
 	style.content_margin_left = 8
 	style.content_margin_right = 8
-	style.border_color = Color(ink.r, ink.g, ink.b, 0.3 if on_paper else 0.16)
+	style.border_color = Color(ink.r, ink.g, ink.b, 0.3 if on_paper else 0.24)
 	style.set_border_width_all(1)
 	return style
 
@@ -50,7 +51,9 @@ static func keycap(on_paper := false) -> StyleBoxFlat:
 static func button_style(fill: Color) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = fill
-	style.set_corner_radius_all(5)
+	style.set_corner_radius_all(0)
+	style.border_color = Color(SIGNAL, 0.24)
+	style.set_border_width_all(1)
 	style.set_content_margin_all(10)
 	style.content_margin_left = 16
 	style.content_margin_right = 16
@@ -104,10 +107,10 @@ static func menu_theme() -> Theme:
 		theme.set_color("font_hover_pressed_color", kind, Color.WHITE)
 		theme.set_color("font_focus_color", kind, INK)
 	for kind in ["Button", "OptionButton"]:
-		theme.set_stylebox("normal", kind, button_style(Color(1, 1, 1, 0.08)))
-		theme.set_stylebox("hover", kind, button_style(Color(1, 1, 1, 0.16)))
-		theme.set_stylebox("pressed", kind, button_style(Color(1, 1, 1, 0.24)))
-		theme.set_stylebox("hover_pressed", kind, button_style(Color(1, 1, 1, 0.24)))
+		theme.set_stylebox("normal", kind, button_style(Color(0.055, 0.043, 0.047, 0.74)))
+		theme.set_stylebox("hover", kind, button_style(Color(SIGNAL, 0.12)))
+		theme.set_stylebox("pressed", kind, button_style(Color(SIGNAL, 0.23)))
+		theme.set_stylebox("hover_pressed", kind, button_style(Color(SIGNAL, 0.23)))
 		theme.set_stylebox("focus", kind, StyleBoxEmpty.new())
 	for state in ["normal", "hover", "pressed", "hover_pressed", "focus"]:
 		theme.set_stylebox(state, "CheckButton", StyleBoxEmpty.new())

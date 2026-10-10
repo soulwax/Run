@@ -153,18 +153,28 @@ func apply_weather(
 	_env.fog_density = base_fog * outdoor_mask
 	_env.fog_height = focus_y + lerpf(2.2, 8.5, clampf(s * 0.65 + g * 0.35 + w * 0.4, 0.0, 1.0))
 	_env.fog_height_density = lerpf(0.032, 0.22, clampf(s * 0.55 + g * 0.45 + w * 0.35, 0.0, 1.0)) * outdoor_mask
+	if Game.dream_mode:
+		# Memory fragments need several metres of depth even in the storm.
+		_env.fog_density *= 0.48
+		_env.fog_height_density *= 0.42
 	_env.fog_aerial_perspective = lerpf(0.38, 0.78, clampf(s * 0.7 + w * 0.3, 0.0, 1.0))
 
 	var clear_fog := Color(0.75, 0.82, 0.90)
 	var squall_fog := Color(0.82, 0.86, 0.91)
 	var whiteout_fog := Color(0.90, 0.93, 0.96)
 	_env.fog_light_color = clear_fog.lerp(squall_fog, s).lerp(whiteout_fog, w)
+	if Game.dream_mode:
+		_env.fog_light_color = _env.fog_light_color.lerp(Color(0.40, 0.49, 0.62), 0.36)
 	_env.fog_light_energy = lerpf(0.95, 1.22, w * 0.7 + g * 0.3)
+	if Game.dream_mode:
+		_env.fog_light_energy *= 0.68
 	_env.fog_sun_scatter = lerpf(0.28, 0.06, clampf(s * 0.6 + w * 0.6, 0.0, 1.0))
 
 	# Volumetric fog scattering: forward-scattered sun shafts during lulls,
 	# dense isotropic whiteout wall during blizzards.
 	_env.volumetric_fog_density = lerpf(0.0045, 0.024, pow(s, 1.3)) + w * 0.012
+	if Game.dream_mode:
+		_env.volumetric_fog_density *= 0.58
 	_env.volumetric_fog_albedo = Color(0.88, 0.92, 0.97).lerp(Color(0.96, 0.98, 1.0), w * 0.7 + f * 0.3)
 	_env.volumetric_fog_anisotropy = lerpf(0.62, 0.26, clampf(s * 0.55 + w * 0.65, 0.0, 1.0))
 	_env.volumetric_fog_length = lerpf(108.0, 58.0, clampf(s * 0.6 + w * 0.5, 0.0, 1.0))
@@ -175,6 +185,8 @@ func apply_weather(
 	var sky_squall := Color(0.72, 0.77, 0.83)
 	var sky_whiteout := Color(0.85, 0.88, 0.92)
 	_env.background_color = sky_clear.lerp(sky_squall, s).lerp(sky_whiteout, w)
+	if Game.dream_mode:
+		_env.background_color = _env.background_color.lerp(Color(0.39, 0.48, 0.62), 0.26)
 
 	# Outside the fill is the storm's blue. Inside it is a warm bounce, so the
 	# lamps read as a room and the cold is what comes through the door.
@@ -182,6 +194,9 @@ func apply_weather(
 	_env.ambient_light_color = outdoor_ambient.lerp(Color(1.0, 0.82, 0.64), indoors)
 	_env.ambient_light_energy = lerpf(0.92, 0.68, s * 0.7 + w * 0.3) * lerpf(1.0, 0.27, indoors)
 	_env.adjustment_brightness = lerpf(1.04, 0.93, s * 0.65 + w * 0.35) * lerpf(1.0, 0.96, indoors) * (Game.settings.brightness if Game.settings else 1.0)
+	if Game.dream_mode:
+		_env.ambient_light_energy *= 0.8
+		_env.adjustment_brightness *= 0.91
 	_env.adjustment_contrast = lerpf(1.06, 0.98, w * 0.65)
 	_env.adjustment_saturation = lerpf(lerpf(0.80, 0.46, clampf(s * 0.65 + w * 0.55, 0.0, 1.0)), 0.9, indoors)
 
@@ -190,6 +205,9 @@ func apply_weather(
 		_sun.light_color = sun_tint.lerp(Color(1.0, 0.9, 0.78), indoors * 0.25)
 		_sun.light_energy = lerpf(1.62, 0.82, clampf(s * 0.65 + w * 0.45, 0.0, 1.0)) * lerpf(1.0, 0.24, indoors)
 		_sun.light_volumetric_fog_energy = lerpf(1.15, 2.35, clampf(s * 0.6 + g * 0.4 + w * 0.4, 0.0, 1.0)) * lerpf(1.0, 0.18, indoors)
+		if Game.dream_mode:
+			_sun.light_energy *= 0.66
+			_sun.light_volumetric_fog_energy *= 0.45
 
 	if clock_running:
 		_apply_clock(indoors)

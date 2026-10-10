@@ -10,7 +10,7 @@ from studio import model
 
 STORY_PATH = model.ROOT / "assets/dialogue/dream.json"
 BEAT_COUNT = 4  # The dream's four approach beats align with its four movement markers.
-MOTION_CUES = {"cut_tree", "delayed_steps", "lantern_witness", "tracks_stop", "tower_gaze", "window_gaze"}
+MOTION_CUES = {"cut_tree", "delayed_steps", "lantern_witness", "tracks_stop", "tower_gaze", "window_gaze", "threshold_pause"}
 _ID = re.compile(r"^[a-z][a-z0-9_-]{0,31}$")
 _LOCK = threading.Lock()
 

@@ -44,6 +44,20 @@ func _run() -> void:
 		await _capture_station_flow(experience)
 		get_tree().quit()
 		return
+	if focus == "memory_architecture":
+		await _capture_memory_architecture(experience)
+		get_tree().quit()
+		return
+	if focus == "presentation_edges":
+		await _capture_dream_journal(experience, "journal_final")
+		experience.set("_answer_open", true)
+		await _capture_warning(experience, "warning_final")
+		get_tree().quit()
+		return
+	if focus == "cue_timing":
+		await _capture_cue_timing(experience)
+		get_tree().quit()
+		return
 	if focus == "folded_path":
 		await _capture_fold_return(route, experience, "folded_path")
 		print("Focused folded-path capture saved under build/dream/")
@@ -80,6 +94,95 @@ func _place_player(offset: float) -> void:
 	Game.player.global_position = Game.trail.on_ground(frame.origin) + Vector3.UP * 0.15
 	Game.player.velocity = Vector3.ZERO
 	Game.player.reset_physics_interpolation()
+
+
+func _aim_player_at(target: Vector3) -> void:
+	var toward := target - (Game.player.global_position + Vector3.UP * 1.5)
+	var flat := Vector2(toward.x, toward.z).length()
+	Game.player.set("_yaw", atan2(-toward.x, -toward.z))
+	# Terrain heights at adjacent route samples vary sharply. Keep the ordinary
+	# shoulder camera while pointing toward a memory on the hillside.
+	Game.player.set("_pitch", clampf(atan2(toward.y, maxf(flat, 0.01)), -0.15, 0.15))
+	Game.player.call("_apply_look")
+	Game.player.camera.make_current()
+
+
+func _capture_memory_architecture(experience: Node) -> void:
+	var architecture := experience.get("_memory_architecture") as DreamMemoryArchitecture
+	if architecture == null:
+		push_error("Dream memory architecture was not built")
+		return
+	experience.call("_set_caption", "")
+	var views := [
+		{"cue": "sisters", "offset": 12.0, "name": "memory_threshold"},
+		{"cue": "sisters", "offset": 22.0, "name": "memory_corridor_lookback"},
+		{"cue": "thread", "offset": 28.0, "name": "memory_lighthouse"},
+		{"cue": "window", "offset": 43.0, "name": "memory_window"},
+		{"cue": "clearing", "offset": 61.0, "name": "memory_clearing"},
+	]
+	for view in views:
+		var cue := str(view["cue"])
+		architecture.reveal_cue(cue)
+		if cue == "clearing":
+			architecture.enter_clearing()
+		_place_player(float(view["offset"]))
+		var focus_at := architecture.cue_position(cue) + Vector3.UP * (3.1 if cue == "thread" else 1.45)
+		_aim_player_at(focus_at)
+		await get_tree().create_timer(1.6).timeout
+		experience.call("_set_caption", "")
+		architecture.reveal_cue(cue)
+		await get_tree().create_timer(1.0).timeout
+		print("Memory preview %s: %s %.2f" % [cue, str(architecture._states[cue]), float(architecture._values[cue])])
+		_aim_player_at(focus_at)
+		await _save_frame(str(view["name"]) + "_player")
+		_camera.make_current()
+		var frame := Game.trail.frame_at(Game.trail.player_start_offset + float(view["offset"]))
+		var across := frame.basis.x.normalized()
+		if cue == "window":
+			var room := architecture._roots[cue] as Node3D
+			_camera.global_position = room.to_global(Vector3(0.0, 2.0, -8.0))
+			_camera.look_at(room.to_global(Vector3(0.0, 1.5, 0.0)), Vector3.UP)
+		else:
+			_camera.global_position = Game.player.global_position + across * 2.0 - frame.basis.z * 1.4 + Vector3.UP * 2.2
+			_camera.look_at(architecture.cue_position(cue) + Vector3.UP * (3.0 if cue == "thread" else 1.35), Vector3.UP)
+		await _save_frame(str(view["name"]) + "_wide")
+	print("Dream memory architecture captures saved under build/dream/")
+
+
+func _capture_cue_timing(experience: Node) -> void:
+	var architecture := experience.get("_memory_architecture") as DreamMemoryArchitecture
+	var events: Array = experience.get("_story").get("events", [])
+	if architecture == null or events.is_empty():
+		push_error("Dream cue timing needs the architecture and story events")
+		return
+	experience.set("_story_event_cue_index", 1)
+	experience.set("_stage", 1)
+	experience.set("_apparition_state", 0)
+	var figure := experience.get("_figure") as Node3D
+	if figure:
+		figure.show()
+	_place_player(14.5)
+	_aim_player_at(architecture.cue_position("sisters") + Vector3.UP * 1.4)
+	experience.call("_set_caption", "")
+	var event: Dictionary = events[0]
+	experience.call("_queue_story_line", str(event["line"]), "threshold_pause", event.get("journal", {}), -1, "sisters")
+	assert(architecture._states["sisters"] == "anticipating", "the subtitle should prepare the threshold before its reveal")
+	var cue_started := Time.get_ticks_msec()
+	await get_tree().create_timer(0.25).timeout
+	await _save_frame("cue_threshold_before")
+	print("Threshold at %.2f s: %s %.2f" % [float(Time.get_ticks_msec() - cue_started) / 1000.0, architecture._states["sisters"], architecture._values["sisters"]])
+	await get_tree().create_timer(0.9).timeout
+	await _save_frame("cue_threshold_rising")
+	print("Threshold at %.2f s: %s %.2f" % [float(Time.get_ticks_msec() - cue_started) / 1000.0, architecture._states["sisters"], architecture._values["sisters"]])
+	await get_tree().create_timer(1.8).timeout
+	await _save_frame("cue_threshold_held")
+	print("Threshold at %.2f s: %s %.2f" % [float(Time.get_ticks_msec() - cue_started) / 1000.0, architecture._states["sisters"], architecture._values["sisters"]])
+	experience.call("_open_dream_journal")
+	var held_amount: float = architecture._values["sisters"]
+	await get_tree().create_timer(0.5).timeout
+	assert(is_equal_approx(float(architecture._values["sisters"]), held_amount), "reading the journal must hold the memory reveal")
+	experience.call("_close_dream_journal")
+	print("Threshold reveal and journal hold checked")
 
 
 func _aim(offset: float, from_across: float, from_ahead: float, height: float, look_height: float = 0.8) -> void:
@@ -137,13 +240,13 @@ func _capture_station_flow(experience: Node) -> void:
 	_camera.global_position = Game.player.global_position + across * 2.8 + Vector3.UP * 1.7
 	_camera.look_at(figure.global_position + Vector3.UP * 1.15, Vector3.UP)
 	_camera.make_current()
-	experience.call("_start_station_dialogue", 1)
-	await _settle()
-	await _save_frame("station_window_choices")
-	_exercise_station_choice(experience, 0)
 	experience.call("_start_station_dialogue", 0)
 	await _settle()
 	await _save_frame("station_thread_choices")
+	_exercise_station_choice(experience, 0)
+	experience.call("_start_station_dialogue", 1)
+	await _settle()
+	await _save_frame("station_window_choices")
 	_exercise_station_choice(experience, 0)
 	var completed: Dictionary = experience.get("_completed_talk_rounds")
 	assert(completed.has(0) and completed.has(1), "station exchanges should be recorded once each")
@@ -153,7 +256,7 @@ func _capture_station_flow(experience: Node) -> void:
 	assert(experience.get("_conversation_round") == 2, "closing dialogue should continue at the first unplayed round")
 	await _settle()
 	await _save_frame("station_flow_continues")
-	print("Station dialogue capture: out-of-order exchanges recorded; closing dialogue resumes at round 3")
+	print("Station dialogue capture: chronological exchanges recorded; closing dialogue resumes at round 3")
 
 
 func _exercise_station_choice(experience: Node, index: int) -> void:

@@ -57,6 +57,7 @@
     {
       "id": "sisters",
       "offset": 15.0,
+      "motion": "threshold_pause",
       "line": "Three sisters, all called duty: leave, follow, freeze. They make a maze when someone else chooses the walls.",
       "journal": {
         "id": "three_sisters",
