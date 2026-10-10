@@ -1,6 +1,6 @@
 # The dream: a playable prologue
 
-The current atmosphere direction is specified in [Dream atmosphere without staged memory scenes](DREAM_ATMOSPHERE_PLAN.md). The live dream uses route-cued story events, six answers, four conversation rounds, and three outcomes. This original design below retains earlier mechanics for reference.
+The current atmosphere direction is specified in [Dream atmosphere: overlapping memory architecture](DREAM_ATMOSPHERE_PLAN.md). The live dream uses route-cued story events, six answers, four conversation rounds, and three outcomes. This original design below retains earlier mechanics for reference.
 
 ## Intent
 
