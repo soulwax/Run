@@ -27,4 +27,6 @@ The sprint pace trace preserved all seven cues in order, reached both station ex
 
 The shared `SignalGlass` overlay applies a restrained CRT pass to every screen, with occasional brief signal breaks, Japanese record marks and a computer feed label. The Screen Effects setting controls its intensity; the existing paper page remains a paper object.
 
+The follow-up UI pass adds finer phosphor grain, a slow sync roll, corner registration marks and compact compute/record readouts. Japanese status text follows the current phase. The standalone waking handoff now saves completion and consumes the final input before replacing the scene.
+
 Godot 4.7.2 Mono import, the dream flow probe, the story data check, and the C# build passed. The station composition was captured with lean graphics; the warning composition was captured with lean and full graphics. The generated editable level still reports two node type warnings during scene assembly; those did not interrupt the route probe or captures.

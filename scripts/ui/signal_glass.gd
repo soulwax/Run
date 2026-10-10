@@ -8,6 +8,8 @@ var _glass: ColorRect
 var _material: ShaderMaterial
 var _status: Label
 var _japanese: Label
+var _compute: Label
+var _record: Label
 var _indicator: ColorRect
 var _next_flicker := 6.0
 var _flicker_left := 0.0
@@ -72,12 +74,67 @@ func _build_marks() -> void:
 	_japanese.offset_bottom = 42.0
 	_japanese.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	add_child(_japanese)
+	_compute = UiChrome.term_label("演算  //  CORE 07   ·   04.18", 11, Color(UiChrome.BONE, 0.58))
+	_compute.anchor_top = 1.0
+	_compute.anchor_bottom = 1.0
+	_compute.offset_left = 26.0
+	_compute.offset_right = 310.0
+	_compute.offset_top = -42.0
+	_compute.offset_bottom = -20.0
+	add_child(_compute)
+	_record = UiChrome.term_label("記録中  /  夢の記録", 11, Color(UiChrome.BONE, 0.58))
+	_record.anchor_left = 1.0
+	_record.anchor_top = 1.0
+	_record.anchor_right = 1.0
+	_record.anchor_bottom = 1.0
+	_record.offset_left = -260.0
+	_record.offset_right = -26.0
+	_record.offset_top = -42.0
+	_record.offset_bottom = -20.0
+	_record.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	add_child(_record)
 	_indicator = ColorRect.new()
 	_indicator.color = Color(UiChrome.SIGNAL, 0.82)
 	_indicator.position = Vector2(12.0, 25.0)
 	indicator_size()
 	_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_indicator)
+	_build_registration_marks()
+
+
+func _build_registration_marks() -> void:
+	# Fine corner ticks make the glass read like a recorder display. They sit
+	# inside the safe margin and stay clear of dialogue and paper content.
+	for corner in 4:
+		var mark := Control.new()
+		mark.name = "RegistrationMark%d" % corner
+		mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		mark.set_anchors_preset(Control.PRESET_FULL_RECT)
+		add_child(mark)
+		var horizontal := ColorRect.new()
+		horizontal.color = Color(UiChrome.SIGNAL, 0.27)
+		horizontal.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var vertical := ColorRect.new()
+		vertical.color = Color(UiChrome.SIGNAL, 0.27)
+		vertical.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var left := corner % 2 == 0
+		var top := corner < 2
+		horizontal.position = Vector2(26.0 if left else -54.0, 58.0 if top else -58.0)
+		horizontal.size = Vector2(28.0, 1.0)
+		vertical.position = Vector2(26.0 if left else -27.0, 58.0 if top else -86.0)
+		vertical.size = Vector2(1.0, 28.0)
+		if not left:
+			horizontal.anchor_left = 1.0
+			horizontal.anchor_right = 1.0
+			vertical.anchor_left = 1.0
+			vertical.anchor_right = 1.0
+		if not top:
+			horizontal.anchor_top = 1.0
+			horizontal.anchor_bottom = 1.0
+			vertical.anchor_top = 1.0
+			vertical.anchor_bottom = 1.0
+		mark.add_child(horizontal)
+		mark.add_child(vertical)
 
 
 func indicator_size() -> void:
@@ -93,8 +150,15 @@ func _sync_strength() -> void:
 		_status.visible = effects > 0.01
 	if _japanese:
 		_japanese.visible = effects > 0.01
+	if _compute:
+		_compute.visible = effects > 0.01
+	if _record:
+		_record.visible = effects > 0.01
 	if _indicator:
 		_indicator.visible = effects > 0.01
+	for mark in get_children():
+		if mark is Control and str(mark.name).begins_with("Registration"):
+			mark.visible = effects > 0.01
 
 
 func _refresh_status() -> void:
@@ -123,3 +187,12 @@ func _refresh_status() -> void:
 			state = "END OF RECORD"
 	if _status:
 		_status.text = "OD-7  //  %s" % state
+	if _record:
+		var record_state := "記録中"
+		if Game.phase == Game.Phase.PAUSED:
+			record_state = "一時停止"
+		elif Game.phase == Game.Phase.CAUGHT:
+			record_state = "信号消失"
+		elif Game.phase == Game.Phase.ESCAPED:
+			record_state = "記録終了"
+		_record.text = "%s  /  夢の記録" % record_state

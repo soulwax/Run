@@ -837,8 +837,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if _waking_card and Game.phase == Game.Phase.DIALOGUE:
 		if event.is_action_pressed("interact") or event.is_action_pressed("ui_accept"):
-			_return_to_menu()
 			get_viewport().set_input_as_handled()
+			_return_to_menu()
 			return
 		if event.is_action_pressed("pause"):
 			Game.toggle_pause()
@@ -1828,6 +1828,9 @@ func _ending_text() -> String:
 
 
 func _return_to_menu() -> void:
+	# The standalone dream exits from its waking card rather than through
+	# _wake(), so commit completion at this final handoff as well.
+	Game.complete_dream()
 	_restore_character_conversation(true)
 	Game.dream_mode = false
 	Game.mathilda_pov = false

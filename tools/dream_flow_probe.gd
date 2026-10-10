@@ -1,7 +1,8 @@
 extends Node
 
-## Drives the live dream from the trail's end to the final choice at sprint pace.
-## No memory is selected, so this probe never writes the player's dream save.
+## Walks the live dream from opening to waking at real movement speed. Set
+## RUN_DREAM_PACE=walk or sprint; configure its user data directory to isolate
+## the saved memory and completion record.
 const MAIN := preload("res://scenes/main.tscn")
 const EXPECTED_MARKERS := ["tree_line", "sisters", "footsteps", "thread", "lantern", "window", "empty_path"]
 
@@ -16,19 +17,29 @@ func _run() -> void:
 	Game.character_selected = true
 	var main := MAIN.instantiate()
 	get_tree().root.add_child(main)
+	get_tree().current_scene = main
 	for _frame in 2400:
 		if Game.trail and Game.player and Game.phase == Game.Phase.DREAM:
 			break
 		await get_tree().process_frame
-	assert(Game.phase == Game.Phase.DREAM, "dream must enter the playable phase")
+	if not _require(Game.phase == Game.Phase.DREAM, "dream must enter the playable phase"):
+		get_tree().quit(1)
+		return
 	var route := main.find_child("DreamRoute", true, false)
 	var experience: Node = route.get_parent() if route else null
-	assert(experience != null, "live dream experience must exist")
+	if not _require(experience != null, "live dream experience must exist"):
+		get_tree().quit(1)
+		return
 	experience.set("_camera_choreography_enabled", false)
-	var destination := Game.trail.frame_at(Game.trail.player_start_offset + 67.0)
-	Game.player.global_position = Game.trail.on_ground(destination.origin) + Vector3.UP * 0.15
-	Game.player.velocity = Vector3.ZERO
-	Game.player.reset_physics_interpolation()
+	var pace := OS.get_environment("RUN_DREAM_PACE")
+	if pace.is_empty():
+		pace = "walk"
+	if not _require(pace in ["walk", "sprint"], "RUN_DREAM_PACE must be walk or sprint"):
+		get_tree().quit(1)
+		return
+	Game.player.set("_autopilot", pace)
+	var starting_offset := Game.trail.offset_of(Game.player.global_position)
+	var furthest_offset := starting_offset
 	var story: Dictionary = experience.get("_story")
 	var beats: Array = story.get("beats", [])
 	var events: Array = story.get("events", [])
@@ -37,8 +48,9 @@ func _run() -> void:
 	var last_stage := 0
 	var last_event := 0
 	var journal_and_pause_checked := false
-	for _frame in 3600:
+	for _frame in 12000:
 		await get_tree().process_frame
+		furthest_offset = maxf(furthest_offset, Game.trail.offset_of(Game.player.global_position))
 		var stage: int = experience.get("_stage")
 		var event_index: int = experience.get("_story_event_cue_index")
 		if stage > last_stage:
@@ -50,13 +62,21 @@ func _run() -> void:
 		if experience.get("_story_line_active"):
 			if not journal_and_pause_checked:
 				experience.call("_open_dream_journal")
-				assert(experience.get("_dream_journal_open") and Game.player.dialogue_locked, "journal must hold the dream and player")
+				if not _require(experience.get("_dream_journal_open") and Game.player.dialogue_locked, "journal must hold the dream and player"):
+					get_tree().quit(1)
+					return
 				experience.call("_close_dream_journal")
-				assert(not Game.player.dialogue_locked, "closing the journal must restore free walking")
+				if not _require(not Game.player.dialogue_locked, "closing the journal must restore free walking"):
+					get_tree().quit(1)
+					return
 				Game.toggle_pause()
-				assert(Game.phase == Game.Phase.PAUSED, "pause must interrupt the dream")
+				if not _require(Game.phase == Game.Phase.PAUSED, "pause must interrupt the dream"):
+					get_tree().quit(1)
+					return
 				Game.toggle_pause()
-				assert(Game.phase == Game.Phase.DREAM, "resume must restore the dream")
+				if not _require(Game.phase == Game.Phase.DREAM, "resume must restore the dream"):
+					get_tree().quit(1)
+					return
 				journal_and_pause_checked = true
 			experience.set("_caption_time", 100.0)
 			var speech := experience.get("_speech_sprite") as Sprite3D
@@ -67,9 +87,13 @@ func _run() -> void:
 			var round_index: int = experience.get("_station_round_index")
 			if not seen_stations.has(round_index):
 				seen_stations.append(round_index)
-				assert(experience.get("_choice_buttons").size() == story["small_talk"][round_index]["choices"].size(), "station choices must match their own round")
+				if not _require(experience.get("_choice_buttons").size() == story["small_talk"][round_index]["choices"].size(), "station choices must match their own round"):
+					get_tree().quit(1)
+					return
 				experience.call("_choose_small_talk", 0)
-				assert(experience.get("_conversation_response") == story["small_talk"][round_index]["choices"][0]["response"], "station must use the displayed response")
+				if not _require(experience.get("_conversation_response") == story["small_talk"][round_index]["choices"][0]["response"], "station must use the displayed response"):
+					get_tree().quit(1)
+					return
 			if experience.get("_conversation_response_pending"):
 				experience.call("_reveal_conversation_response")
 		if experience.get("_station_dialogue_active") and experience.get("_conversation_response_ready"):
@@ -88,24 +112,103 @@ func _run() -> void:
 			experience.call("_build_small_talk_choices")
 		if experience.get("_answer_open") and experience.get("_choice_buttons").size() == story["branches"].size() and experience.get("_conversation_round") >= story["small_talk"].size():
 			break
-	assert(seen_markers == EXPECTED_MARKERS, "sprinting must preserve beat and event order: %s" % [seen_markers])
-	assert(seen_stations == [0, 1], "station replies must follow their associated cue: %s" % [seen_stations])
-	assert(experience.get("_story_line_queue").is_empty(), "no story line may be discarded")
-	assert(experience.get("_answer_open"), "the final choice must become available")
-	assert(journal_and_pause_checked, "journal and pause must be exercised on a line")
-	_exercise_endings(experience)
-	print("Dream flow checked: seven ordered cues, two station replies, journal/pause, all endings reachable")
+	if not _require(furthest_offset - starting_offset >= 60.0, "player must physically walk to the clearing: %.2f m" % (furthest_offset - starting_offset)):
+		get_tree().quit(1)
+		return
+	if not _require(seen_markers == EXPECTED_MARKERS, "%s pace cue order: %s" % [pace, seen_markers]):
+		get_tree().quit(1)
+		return
+	if not _require(seen_stations == [0, 1], "station replies must follow their cues: %s" % [seen_stations]):
+		get_tree().quit(1)
+		return
+	if not _require(experience.get("_story_line_queue").is_empty(), "no story line may be discarded"):
+		get_tree().quit(1)
+		return
+	if not _require(experience.get("_answer_open"), "the final choice must become available"):
+		get_tree().quit(1)
+		return
+	if not _require(journal_and_pause_checked, "journal and pause must be exercised on a line"):
+		get_tree().quit(1)
+		return
+	if not _exercise_endings(experience):
+		get_tree().quit(1)
+		return
+	if not await _exercise_standalone_exit(experience):
+		get_tree().quit(1)
+		return
+	print("Dream flow checked at %s pace: %.1f m traversed, ordered cues, two station replies, journal/pause, chosen memory saved, wake completed, title returned" % [pace, furthest_offset - starting_offset])
 	get_tree().quit()
 
 
-func _exercise_endings(experience: Node) -> void:
+func _exercise_endings(experience: Node) -> bool:
+	var previous_cues: Dictionary = experience.get("_seen_story_cues").duplicate(true)
+	var previous_strain: int = experience.get("_conversation_strain")
+	var previous_outcome := str(experience.get("_dream_outcome"))
+	var previous_understood: bool = experience.get("_dream_understood")
 	experience.set("_conversation_strain", 0)
 	experience.set("_seen_story_cues", {"window": true, "sisters": true})
 	experience.call("_ending_text")
-	assert(experience.get("_dream_outcome") == "complete", "remembering the window and another cue must reach the complete ending")
+	if not _require(experience.get("_dream_outcome") == "complete", "window and another cue must reach the complete ending"):
+		return false
 	experience.set("_seen_story_cues", {})
 	experience.call("_ending_text")
-	assert(experience.get("_dream_outcome") == "unresolved", "missing the memory clues must reach the unresolved ending")
+	if not _require(experience.get("_dream_outcome") == "unresolved", "missing clues must reach the unresolved ending"):
+		return false
 	experience.set("_conversation_strain", 4)
 	experience.call("_ending_text")
-	assert(experience.get("_dream_outcome") == "ruptured", "high conversation strain must reach the ruptured ending")
+	if not _require(experience.get("_dream_outcome") == "ruptured", "high conversation strain must reach the ruptured ending"):
+		return false
+	experience.set("_conversation_strain", previous_strain)
+	experience.set("_seen_story_cues", previous_cues)
+	experience.set("_dream_outcome", previous_outcome)
+	experience.set("_dream_understood", previous_understood)
+	return true
+
+
+func _exercise_standalone_exit(experience: Node) -> bool:
+	var sandbox_path: String = ProjectSettings.globalize_path("user://")
+	if not _require(sandbox_path.contains("DreamFlowPlayabilityAudit"), "launch with application/config/custom_user_dir_name=DreamFlowPlayabilityAudit to isolate the save"):
+		return false
+	Game.dream_memory = ""
+	Game.dream_completed = false
+	experience.call("_choose_memory", "name")
+	if not _require(Game.dream_memory == "name" and not Game.dream_completed, "the choice must save before waking"):
+		return false
+	var save := ConfigFile.new()
+	if not _require(save.load("user://dream.cfg") == OK, "the selected memory must persist"):
+		return false
+	if not _require(save.get_value("dream", "memory", "") == "name", "saved memory must match the answer"):
+		return false
+	experience.call("_reveal_conversation_response")
+	experience.call("_continue_memory_dialogue")
+	if not _require(experience.get("_waking_card") and Game.phase == Game.Phase.DIALOGUE, "closing response must lead to the waking card"):
+		return false
+	if not _require(not Game.dream_completed, "completion waits until the waking card is dismissed"):
+		return false
+	var return_event := InputEventAction.new()
+	return_event.action = &"interact"
+	return_event.pressed = true
+	return_event.strength = 1.0
+	experience.call("_unhandled_input", return_event)
+	if not _require(Game.dream_completed, "waking card dismissal must mark the dream complete"):
+		return false
+	if not _require(Game.phase == Game.Phase.BOOT and not Game.dream_mode, "waking must return to the title phase"):
+		return false
+	if not _require(save.load("user://dream.cfg") == OK and bool(save.get_value("dream", "completed", false)), "completion must persist beside the chosen memory"):
+		return false
+	for _frame in 1200:
+		var scene := get_tree().current_scene
+		if scene and scene.find_child("TitleMenu", true, false):
+			break
+		await get_tree().process_frame
+	var title := get_tree().current_scene
+	if not _require(title and title.find_child("TitleMenu", true, false), "waking card must return to the title menu"):
+		return false
+	return true
+
+
+func _require(condition: bool, message: String) -> bool:
+	if condition:
+		return true
+	push_error(message)
+	return false

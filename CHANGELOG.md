@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.8.0 — 2026-10-11
+
+Glass hums under snow\
+Red letters map the cold core\
+One eye stays awake
+
+Then at the last prompt\
+The old name comes home again\
+She wakes inside glass
+
 ## 0.2.7.0 — 2026-10-11
 
 Snow flickers on glass\
