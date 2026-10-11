@@ -4,9 +4,8 @@ shader_type canvas_item;
 // split colour fringes, scanlines, phosphor grain, a slow rolling band and a
 // darkened rim. strength 0 leaves the screen untouched (Settings.screen_effects).
 
-uniform sampler2D screen : hint_screen_texture, filter_linear_mipmap;
+uniform sampler2D screen : hint_screen_texture, filter_linear;
 uniform float strength : hint_range(0.0, 1.0) = 1.0;
-uniform float aberration = 1.4;
 uniform float scan = 0.14;
 uniform float grain = 0.045;
 uniform vec4 tint : source_color = vec4(0.86, 0.12, 0.16, 1.0);
@@ -16,17 +15,14 @@ float hash(vec2 p) {
 }
 
 void fragment() {
-	vec2 px = SCREEN_PIXEL_SIZE;
 	vec2 uv = SCREEN_UV;
 	// A faint band rolls down the glass and nudges the lines it crosses.
 	float roll = abs(fract(uv.y * 0.6 - TIME * 0.05) - 0.5);
 	float band = 1.0 - smoothstep(0.0, 0.035, roll);
 	uv.x += band * 0.0012 * strength;
-	float split = aberration * strength;
-	vec3 c;
-	c.r = texture(screen, uv + vec2(px.x * split, 0.0)).r;
-	c.g = texture(screen, uv).g;
-	c.b = texture(screen, uv - vec2(px.x * split, 0.0)).b;
+	// Keep the title glass to one framebuffer lookup; scanlines, the rolling
+	// band, grain and red signal accents retain the CRT character cheaply.
+	vec3 c = texture(screen, uv).rgb;
 	float line = 0.5 + 0.5 * sin(FRAGCOORD.y * 3.14159);
 	c *= 1.0 - scan * strength * line;
 	c += band * 0.025 * strength * tint.rgb;

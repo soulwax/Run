@@ -27,11 +27,8 @@ const TAKES := [
 ]
 # The bones the Quaternius bake writes, so her idle and these clips blend
 # bone for bone.
-const TRACKED := ["DEF-spine", "DEF-spine.001", "DEF-spine.003", "DEF-spine.004", "DEF-spine.005", "DEF-spine.006",
-	"DEF-shoulder.L", "DEF-upper_arm.L", "DEF-forearm.L", "DEF-hand.L",
-	"DEF-shoulder.R", "DEF-upper_arm.R", "DEF-forearm.R", "DEF-hand.R",
-	"DEF-thigh.L", "DEF-shin.L", "DEF-foot.L", "DEF-toe.L",
-	"DEF-thigh.R", "DEF-shin.R", "DEF-foot.R", "DEF-toe.R"]
+const RIG_PROFILE := preload("res://scripts/player/animation_rig_profile.gd")
+const TRACKED: Array = RIG_PROFILE.TARGET_BONES
 # Torso bones posed by a frame: [elf bone, source up from, source up to,
 # elf up from, elf up to, which left-right pair].
 const TORSO := [

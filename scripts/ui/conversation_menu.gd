@@ -1,10 +1,9 @@
 class_name ConversationMenu
 extends Control
 
-## The conversation screen: the other person's name over the line being
-## spoken, and her topics under it, on a dark band to the right of the view,
-## as in Skyrim. Topics already taken stay listed but dimmed. Conversation
-## drives it; mouse, keys and pad all choose.
+## Signal terminal for encounters: speaker, current line and topics in a
+## compact panel at the right edge. Taken topics stay listed but dimmed.
+## Conversation drives it; mouse, keys and pad all choose.
 
 signal chosen(index: int)
 
@@ -18,6 +17,7 @@ var _speaker: Label
 var _line: Label
 var _topics: VBoxContainer
 var _hint: Label
+var _panel: PanelContainer
 var _buttons: Array[Button] = []
 var _fade: Tween
 # A cursor resting where a topic appears must not steal the first topic.
@@ -29,54 +29,40 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	visible = false
 	modulate.a = 0.0
-	var band := TextureRect.new()
-	var gradient := Gradient.new()
-	gradient.set_color(0, Color(0.02, 0.025, 0.035, 0.0))
-	gradient.set_color(1, Color(0.02, 0.025, 0.035, 0.82))
-	gradient.add_point(0.45, Color(0.02, 0.025, 0.035, 0.6))
-	var texture := GradientTexture2D.new()
-	texture.gradient = gradient
-	texture.fill_from = Vector2(0, 0)
-	texture.fill_to = Vector2(1, 0)
-	band.texture = texture
-	band.stretch_mode = TextureRect.STRETCH_SCALE
-	band.anchor_left = 0.42
-	band.anchor_right = 1.0
-	band.anchor_bottom = 1.0
-	band.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(band)
+	_panel = PanelContainer.new()
+	_panel.anchor_left = 0.56
+	_panel.anchor_right = 0.95
+	_panel.anchor_top = 0.16
+	_panel.anchor_bottom = 0.91
+	var panel_style := UiChrome.term_box(Color(UiChrome.VOID, 0.9), Color(UiChrome.SIGNAL, 0.54), 1, 22)
+	panel_style.border_width_left = 3
+	_panel.add_theme_stylebox_override("panel", panel_style)
+	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_panel)
 	var column := VBoxContainer.new()
-	column.anchor_left = 0.56
-	column.anchor_right = 0.93
-	column.anchor_top = 0.2
-	column.anchor_bottom = 0.88
 	column.add_theme_constant_override("separation", 12)
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(column)
-	_name = UiChrome.label("", 30, UiChrome.PAPER)
+	_panel.add_child(column)
+	var channel := UiChrome.term_label("// VOICE CHANNEL", 12, UiChrome.SIGNAL)
+	column.add_child(channel)
+	_name = UiChrome.term_label("", 26, UiChrome.BONE, true)
 	column.add_child(_name)
 	var rule := ColorRect.new()
-	rule.color = Color(UiChrome.PAPER, 0.35)
+	rule.color = Color(UiChrome.SIGNAL, 0.52)
 	rule.custom_minimum_size = Vector2(0, 1)
 	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(rule)
-	_speaker = UiChrome.label("", 14, UiChrome.MUTED)
+	_speaker = UiChrome.term_label("", 12, UiChrome.ASH)
 	column.add_child(_speaker)
-	_line = UiChrome.label("", 23, UiChrome.INK)
+	_line = UiChrome.term_label("", 19, UiChrome.BONE)
 	_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_line.custom_minimum_size = Vector2(0, 96)
 	column.add_child(_line)
 	_topics = VBoxContainer.new()
 	_topics.add_theme_constant_override("separation", 2)
 	column.add_child(_topics)
-	_hint = UiChrome.label("", 14, UiChrome.MUTED)
-	_hint.anchor_left = 0.56
-	_hint.anchor_right = 0.93
-	_hint.anchor_top = 1.0
-	_hint.anchor_bottom = 1.0
-	_hint.offset_top = -56
-	_hint.offset_bottom = -28
-	add_child(_hint)
+	_hint = UiChrome.term_label("", 11, UiChrome.ASH)
+	column.add_child(_hint)
 
 
 func open(npc_name: String) -> void:
@@ -97,7 +83,7 @@ func close() -> void:
 ## stand under the header alone.
 func show_line(speaker_name: String, text: String, theirs: bool) -> void:
 	_clear()
-	_speaker.text = "" if theirs else speaker_name.to_upper()
+	_speaker.text = "INBOUND // %s" % speaker_name.to_upper() if theirs else "OUTBOUND // %s" % speaker_name.to_upper()
 	_line.text = text if theirs else "“%s”" % text
 	_line.add_theme_color_override("font_color", UiChrome.INK if theirs else UiChrome.MUTED)
 	_hint.text = "%s  Skip   ·   Esc  Leave" % Game.settings.key_label("interact")
@@ -111,7 +97,8 @@ func show_choices(topics: Array[Dictionary]) -> void:
 		button.text = str(topics[i].text)
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		button.add_theme_font_size_override("font_size", 20)
+		button.add_theme_font_override("font", UiChrome.mono_font())
+		button.add_theme_font_size_override("font_size", 16)
 		var color: Color = DIM if topics[i].get("dim", false) else UiChrome.PAPER
 		if topics[i].get("leave", false):
 			color = UiChrome.MUTED
@@ -147,6 +134,9 @@ func select(index: int) -> void:
 	if index < 0 or index >= _buttons.size():
 		return
 	selected = index
+	for i in _buttons.size():
+		var topic_text := _buttons[i].text.trim_prefix("> ").trim_prefix("  ")
+		_buttons[i].text = ("> " if i == index else "  ") + topic_text
 	_buttons[index].grab_focus()
 
 
@@ -165,14 +155,9 @@ func _clear() -> void:
 
 
 func _topic_style(lit: bool) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(1, 1, 1, 0.07 if lit else 0.0)
-	style.border_width_left = 3
-	style.border_color = Color(UiChrome.PAPER, 0.9 if lit else 0.0)
-	style.content_margin_left = 14
-	style.content_margin_right = 10
-	style.content_margin_top = 6
-	style.content_margin_bottom = 6
+	var style := UiChrome.term_box(Color(UiChrome.SIGNAL, 0.12) if lit else Color(0, 0, 0, 0),
+		Color(UiChrome.SIGNAL, 0.72) if lit else Color(UiChrome.BONE, 0.08), 1, 6)
+	style.border_width_left = 2 if lit else 1
 	return style
 
 

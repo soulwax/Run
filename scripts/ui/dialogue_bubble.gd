@@ -38,20 +38,22 @@ func _ready() -> void:
 	_panel = PanelContainer.new()
 	_panel.position = Vector2(12, 12)
 	_panel.size = Vector2(696, 0)
-	_panel.add_theme_stylebox_override("panel", UiChrome.plate(24, 12))
+	var panel_style := UiChrome.term_box(Color(UiChrome.VOID, 0.94), Color(UiChrome.SIGNAL, 0.58), 1, 20)
+	panel_style.border_width_left = 3
+	_panel.add_theme_stylebox_override("panel", panel_style)
 	_viewport.add_child(_panel)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 10)
 	_panel.add_child(box)
-	_speaker = UiChrome.label("", 15, UiChrome.MUTED)
+	_speaker = UiChrome.term_label("", 13, UiChrome.SIGNAL)
 	box.add_child(_speaker)
-	_line = UiChrome.label("", 24, UiChrome.PAPER)
+	_line = UiChrome.term_label("", 22, UiChrome.BONE)
 	_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(_line)
 	_topics = VBoxContainer.new()
 	_topics.add_theme_constant_override("separation", 4)
 	box.add_child(_topics)
-	_hint = UiChrome.label("", 14, UiChrome.MUTED)
+	_hint = UiChrome.term_label("", 12, UiChrome.ASH)
 	box.add_child(_hint)
 	_surface = MeshInstance3D.new()
 	var quad := QuadMesh.new()
@@ -101,13 +103,20 @@ func open(speaker: String, text: String, responses: Array, target: Node3D = null
 	_buttons.clear()
 	for i in _responses.size():
 		var button := Button.new()
-		button.text = str(_responses[i].text)
+		button.text = "  %s" % str(_responses[i].text)
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.disabled = _responses[i].get("disabled", false)
-		button.add_theme_font_size_override("font_size", 21)
-		button.add_theme_color_override("font_color", UiChrome.MUTED)
-		button.add_theme_color_override("font_focus_color", UiChrome.PAPER)
-		button.add_theme_stylebox_override("normal", UiChrome.button_style(Color(0, 0, 0, 0)))
+		button.focus_mode = Control.FOCUS_ALL
+		button.add_theme_font_override("font", UiChrome.mono_font())
+		button.add_theme_font_size_override("font_size", 16)
+		button.add_theme_color_override("font_color", UiChrome.ASH)
+		button.add_theme_color_override("font_hover_color", UiChrome.BONE)
+		button.add_theme_color_override("font_focus_color", UiChrome.BONE)
+		button.add_theme_color_override("font_pressed_color", UiChrome.BONE)
+		button.add_theme_stylebox_override("normal", _response_style(false))
+		button.add_theme_stylebox_override("hover", _response_style(true))
+		button.add_theme_stylebox_override("focus", _response_style(true))
+		button.add_theme_stylebox_override("pressed", _response_style(true))
 		button.pressed.connect(choose.bind(i))
 		button.mouse_entered.connect(_select.bind(i))
 		_topics.add_child(button)
@@ -151,7 +160,16 @@ func _select(index: int) -> void:
 	if index < 0 or index >= _buttons.size() or _buttons[index].disabled:
 		return
 	_selected = index
+	for i in _buttons.size():
+		_buttons[i].text = ("> " if i == index else "  ") + str(_responses[i].text)
 	_buttons[index].grab_focus()
+
+
+func _response_style(selected: bool) -> StyleBoxFlat:
+	var style := UiChrome.term_box(Color(UiChrome.SIGNAL, 0.12) if selected else Color(0, 0, 0, 0),
+		Color(UiChrome.SIGNAL, 0.68) if selected else Color(UiChrome.BONE, 0.08), 1, 4)
+	style.border_width_left = 2 if selected else 1
+	return style
 
 
 func _step(direction: int) -> void:

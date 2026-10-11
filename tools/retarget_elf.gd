@@ -7,36 +7,9 @@ const SOURCE := "res://addons/quaternius_ik_rigged/Models_with_rigging/Master_Ri
 const TARGET := "res://assets/characters/styloo_elf/elf.glb"
 const OUTPUT := "res://assets/characters/styloo_elf/elf_animations.res"
 const CLIPS := ["Idle", "Walk", "Walk_Formal", "Jog_Fwd", "Sprint", "Jump_Start", "Jump_Land", "Crouch_Idle", "Hit_Chest"]
-const BONES := {
-	"Hips": "DEF-spine",
-	"Spine": "DEF-spine.001",
-	"Chest": "DEF-spine.003",
-	"UpperChest": "DEF-spine.004",
-	"Neck": "DEF-spine.005",
-	"Head": "DEF-spine.006",
-	"LeftShoulder": "DEF-shoulder.L",
-	"LeftUpperArm": "DEF-upper_arm.L",
-	"LeftLowerArm": "DEF-forearm.L",
-	"LeftHand": "DEF-hand.L",
-	"RightShoulder": "DEF-shoulder.R",
-	"RightUpperArm": "DEF-upper_arm.R",
-	"RightLowerArm": "DEF-forearm.R",
-	"RightHand": "DEF-hand.R",
-	"LeftUpperLeg": "DEF-thigh.L",
-	"LeftLowerLeg": "DEF-shin.L",
-	"LeftFoot": "DEF-foot.L",
-	"LeftToes": "DEF-toe.L",
-	"RightUpperLeg": "DEF-thigh.R",
-	"RightLowerLeg": "DEF-shin.R",
-	"RightFoot": "DEF-foot.R",
-	"RightToes": "DEF-toe.R",
-}
-const DIRECTION_CHILD := {
-	"LeftShoulder": "LeftUpperArm", "LeftUpperArm": "LeftLowerArm", "LeftLowerArm": "LeftHand",
-	"RightShoulder": "RightUpperArm", "RightUpperArm": "RightLowerArm", "RightLowerArm": "RightHand",
-	"LeftUpperLeg": "LeftLowerLeg", "LeftLowerLeg": "LeftFoot", "LeftFoot": "LeftToes",
-	"RightUpperLeg": "RightLowerLeg", "RightLowerLeg": "RightFoot", "RightFoot": "RightToes",
-}
+const RIG_PROFILE := preload("res://scripts/player/animation_rig_profile.gd")
+const BONES: Dictionary = RIG_PROFILE.QUATERNIUS_TO_ELF
+const DIRECTION_CHILD: Dictionary = RIG_PROFILE.DIRECTION_CHILD
 
 func _initialize() -> void:
 	call_deferred("_bake")

@@ -59,6 +59,7 @@ Godot build provides separate standard and Mono commands.
 | Main game | `godot-mono --path .` | Start Ophelia's Dream. |
 | Godot editor | `godot-mono --path . -e` | Open the project for editing. |
 | Character studio | `godot-mono --path . scenes/character_presentation.tscn` | Browse the character collection, animation previews, and creator. |
+| Animation workbench | `godot-mono --path . tools/animation_workbench.tscn` | Audition clips on the game rig, scrub timing, and validate bone tracks; see [docs/ANIMATION_WORKBENCH.md](docs/ANIMATION_WORKBENCH.md). |
 | Story Studio | `python tools/studio/server.py` | Start the browser-based narrative authoring tool; see [docs/STORY_STUDIO.md](docs/STORY_STUDIO.md). |
 | Terrain showcase | `godot-mono --path . tools/terrain_view.tscn` | Capture terrain overview images under `build/terrain/`. |
 | Camp showcase | `godot-mono --path . tools/camp_view.tscn` | Capture camp views under `build/camp/`. |
@@ -256,7 +257,6 @@ use `--accept-bad` only as an explicit, reviewed exception.
 
 Asset licences and provenance live beside the relevant assets, including the
 [elf](assets/characters/styloo_elf/README.md), environment assets, and
-`assets/vendor/` and `assets/audio/` provenance records. Walk and jog motion in
-[assets/characters/styloo_elf/feminine/](assets/characters/styloo_elf/feminine/)
-is adapted from the Bandai Namco Research Motion Dataset (CC BY-NC 4.0).
-Accordingly, Ophelia's Dream is non-commercial.
+`assets/vendor/` and `assets/audio/` provenance records. ~~Walk and jog motion in [assets/characters/styloo_elf/feminine/](assets/characters/styloo_elf/feminine/) is adapted from the Bandai Namco Research Motion Dataset (CC BY-NC 4.0). Accordingly, Ophelia's Dream is non-commercial.~~
+
+Went indepednently and created new walk and jog motion for the elf character. The game is now licensed under the MIT License, allowing for commercial use. All other assets are either original or properly licensed for use in this project. Please refer to the individual asset directories for specific licensing information.

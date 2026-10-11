@@ -2,6 +2,7 @@ shader_type spatial;
 render_mode unshaded, blend_mix, depth_prepass_alpha, cull_disabled;
 
 uniform vec3 shadow_tint : source_color = vec3(0.028, 0.022, 0.052);
+uniform vec3 aura_tint : source_color = vec3(0.16, 0.06, 0.29);
 uniform float opacity : hint_range(0.0, 0.95) = 0.76;
 uniform float dissolve : hint_range(0.0, 0.4) = 0.0;
 uniform float lantern_warmth : hint_range(0.0, 1.0) = 0.0;
@@ -28,9 +29,11 @@ void fragment() {
 	float cutoff = dissolve * 3.0;
 	float intact = dissolve <= 0.001 ? 1.0 : 1.0 - smoothstep(cutoff - 0.035, cutoff + 0.035, noise);
 	float edge = smoothstep(cutoff - 0.055, cutoff - 0.018, noise) * (1.0 - smoothstep(cutoff + 0.018, cutoff + 0.055, noise));
-	ALBEDO = shadow_tint + vec3(0.018, 0.027, 0.075) * rim;
+	ALBEDO = shadow_tint + vec3(0.018, 0.027, 0.075) * rim + aura_tint * rim * 0.22;
 	ALBEDO += vec3(0.095, 0.047, 0.012) * rim * lantern_warmth;
-	ALBEDO += vec3(0.12, 0.10, 0.23) * edge * step(0.001, dissolve);
+	ALBEDO += aura_tint * 0.8 * edge * step(0.001, dissolve);
 	ALPHA = clamp(opacity + rim * 0.15 + breath + veil, 0.0, 0.92) * intact;
-	EMISSION = vec3(0.018, 0.026, 0.085) * (0.12 + rim) * opacity + vec3(0.15, 0.19, 0.42) * edge * step(0.001, dissolve);
+	EMISSION = vec3(0.018, 0.026, 0.085) * (0.12 + rim) * opacity
+		+ aura_tint * (0.025 + rim * 0.72) * opacity
+		+ aura_tint * 1.8 * edge * step(0.001, dissolve);
 }

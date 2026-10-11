@@ -61,7 +61,6 @@ var _status: Label
 var _hint: Label
 var _clock: Label
 var _cursor: Label
-var _crt: ColorRect
 var _scrim: ColorRect
 var _content_stack: Control
 var _mode_label: Label
@@ -133,9 +132,6 @@ func _process(_delta: float) -> void:
 
 
 func _on_settings_changed() -> void:
-	if _crt and _crt.material is ShaderMaterial:
-		(_crt.material as ShaderMaterial).set_shader_parameter("strength",
-			minf(Game.settings.screen_effects, 0.22) if _title_mode else Game.settings.screen_effects)
 	if _title_mode:
 		_title_dirty = true
 
@@ -148,7 +144,7 @@ func open_title_settings() -> void:
 	_status.text = ""
 	_disarm()
 	_show_page(_page)
-	_mode_label.text = "// TITLE CONFIGURATION · STORY NOT STARTED"
+	_mode_label.text = "// MAIN MENU · STORY NOT STARTED"
 	_subject_label.text = "MODE  UNSELECTED"
 	_session_heading.text = "MENU"
 	_resume_action.text = "▸  RETURN TO TITLE"
@@ -183,8 +179,6 @@ func close_title_settings() -> void:
 	_open_tween.tween_property(_content_stack, "modulate:a", 0.0, 0.11)
 	_open_tween.tween_property(_frame, "scale:y", 0.015, 0.27).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
 	_open_tween.tween_property(_scrim, "color", Color(0.02, 0.012, 0.015, 0.0), 0.24)
-	if _crt.material is ShaderMaterial:
-		_open_tween.tween_property(_crt.material, "shader_parameter/strength", 0.0, 0.12)
 	_open_tween.chain().tween_callback(_finish_title_close)
 
 
@@ -748,17 +742,6 @@ func _build() -> void:
 	stack.add_child(_hairline(false))
 	stack.add_child(_build_readout())
 	stack.add_child(_build_footer())
-	# The glass goes over everything, the frame and the world behind it.
-	_crt = ColorRect.new()
-	_crt.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_crt.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# Keep the terminal text and controls above the screen-texture pass. The
-	# glass still filters the title behind it, without replacing the panel.
-	_crt.z_index = -1
-	var glass := ShaderMaterial.new()
-	glass.shader = load("res://shaders/menu_crt.gdshader") as Shader
-	_crt.material = glass
-	add_child(_crt)
 	_tetris = TETRIS_JOKE_SCRIPT.new()
 	add_child(_tetris)
 	_fit()
@@ -767,7 +750,8 @@ func _build() -> void:
 func _fit() -> void:
 	if _frame == null:
 		return
-	_frame.size = Vector2(minf(FRAME_MAX.x, maxf(size.x - 48.0, 320.0)), minf(FRAME_MAX.y, maxf(size.y - 40.0, 320.0))).floor()
+	var frame_max := Vector2(1040.0, 700.0) if _title_mode else FRAME_MAX
+	_frame.size = Vector2(minf(frame_max.x, maxf(size.x - 48.0, 320.0)), minf(frame_max.y, maxf(size.y - 40.0, 320.0))).floor()
 	_frame.position = ((size - _frame.size) * 0.5).floor()
 	_frame.pivot_offset = _frame.size * 0.5
 
@@ -791,16 +775,12 @@ func _play_title_open() -> void:
 	_frame.scale = Vector2(1.0, 0.015)
 	_frame.modulate.a = 1.0
 	_content_stack.modulate.a = 0.0
-	var glass := _crt.material as ShaderMaterial
-	glass.set_shader_parameter("strength", 0.0)
 	_open_tween = create_tween()
-	_open_tween.tween_property(_scrim, "color", Color(0.02, 0.012, 0.015, 0.24), 0.12)
+	_open_tween.tween_property(_scrim, "color", Color(0.02, 0.012, 0.015, 0.08), 0.12)
 	_open_tween.tween_property(_frame, "scale:y", 1.02, 0.25).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
-	_open_tween.parallel().tween_property(_crt.material, "shader_parameter/strength", 0.22, 0.25)
 	_open_tween.tween_interval(0.055)
 	_open_tween.tween_property(_content_stack, "modulate:a", 1.0, 0.14)
 	_open_tween.parallel().tween_property(_frame, "scale:y", 1.0, 0.08).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	_open_tween.parallel().tween_property(_crt.material, "shader_parameter/strength", 0.10, 0.12)
 
 
 func _build_header() -> Control:

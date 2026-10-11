@@ -13,6 +13,7 @@ var _capture := false
 var _frames := 0
 var _bake_pid := -1
 var _loading_screen
+var _title_menu: CanvasLayer
 var _title_transition := false
 
 
@@ -253,12 +254,12 @@ func _ready() -> void:
 
 func _show_title_menu() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	var layer := CanvasLayer.new()
-	layer.name = "TitleMenu"
-	layer.layer = 20
-	add_child(layer)
+	_title_menu = CanvasLayer.new()
+	_title_menu.name = "TitleMenu"
+	_title_menu.layer = 20
+	add_child(_title_menu)
 	var menu := preload("res://scripts/ui/dream_menu.gd").new()
-	layer.add_child(menu)
+	_title_menu.add_child(menu)
 	menu.connect("mode_selected", _on_mode_selected)
 
 
@@ -266,6 +267,13 @@ func _on_mode_selected() -> void:
 	if _title_transition:
 		return
 	_title_transition = true
+	# Retire the title immediately. The loading screen lives under Game, so it
+	# survives the scene reload; the menu should not keep drawing behind it.
+	if is_instance_valid(_title_menu):
+		_title_menu.visible = false
+		_title_menu.process_mode = Node.PROCESS_MODE_DISABLED
+		_title_menu.queue_free()
+	_title_menu = null
 	var loading = LOADING_SCREEN_SCRIPT.new()
 	loading.name = "LoadingScreen"
 	Game.add_child(loading)

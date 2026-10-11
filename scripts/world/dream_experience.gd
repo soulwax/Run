@@ -41,6 +41,9 @@ var _boundary_material: ShaderMaterial
 var _boundary_strength := 0.0
 var _post_material: ShaderMaterial
 var _post_rect: ColorRect
+var _aura_material: ShaderMaterial
+var _aura_rect: ColorRect
+var _figure_aura_light: OmniLight3D
 var _speech_view: SubViewport
 var _speech_sprite: Sprite3D
 var _speech_panel: PanelContainer
@@ -210,12 +213,22 @@ func _build_figure() -> void:
 	_silhouette = ShaderMaterial.new()
 	_silhouette.shader = preload("res://shaders/dream_shadow.gdshader")
 	_silhouette.set_shader_parameter("shadow_tint", Color("080611"))
+	_silhouette.set_shader_parameter("aura_tint", Color("32134f"))
 	_silhouette.set_shader_parameter("opacity", 0.76)
 	_silhouette.set_shader_parameter("dissolve", 0.0)
 	for mesh_node in _figure.find_children("*", "MeshInstance3D", true, false):
 		var mesh := mesh_node as MeshInstance3D
 		mesh.material_override = _silhouette
 		mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_figure_aura_light = OmniLight3D.new()
+	_figure_aura_light.name = "MathildaVioletAura"
+	_figure_aura_light.position = Vector3(0.0, 1.05, 0.0)
+	_figure_aura_light.light_color = Color("8d52d2")
+	_figure_aura_light.light_energy = 0.62
+	_figure_aura_light.omni_range = 3.8
+	_figure_aura_light.shadow_enabled = false
+	_figure_aura_light.light_volumetric_fog_energy = 0.22
+	_figure.add_child(_figure_aura_light)
 	_animation = _figure.find_child("AnimationPlayer", true, false) as AnimationPlayer
 	if _animation == null:
 		for node in _figure.find_children("*", "AnimationPlayer", true, false):
@@ -252,7 +265,7 @@ func _build_figure() -> void:
 	var mote := StandardMaterial3D.new()
 	mote.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mote.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mote.albedo_color = Color(0.6, 0.7, 0.85, 0.32)
+	mote.albedo_color = Color(0.52, 0.39, 0.72, 0.34)
 	mote.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
 	particle_mesh.material = mote
 	particles.draw_pass_1 = particle_mesh
@@ -282,6 +295,15 @@ func _build_post_effect() -> void:
 	var canvas := CanvasLayer.new()
 	canvas.layer = 19
 	add_child(canvas)
+	_aura_rect = ColorRect.new()
+	_aura_rect.name = "DreamAura"
+	_aura_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_aura_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_aura_material = ShaderMaterial.new()
+	_aura_material.shader = preload("res://shaders/dream_aura.gdshader")
+	_aura_rect.material = _aura_material
+	_aura_rect.visible = false
+	canvas.add_child(_aura_rect)
 	_post_rect = ColorRect.new()
 	_post_rect.name = "DreamOptics"
 	_post_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -570,6 +592,12 @@ func _layout_caption() -> void:
 
 
 func _process(delta: float) -> void:
+	if _aura_rect:
+		var dream_active := Game.phase == Game.Phase.DREAM and not _dream_journal_open
+		_aura_rect.visible = dream_active
+		if _aura_material:
+			var screen_effects := float(Game.settings.screen_effects) if Game.settings else 1.0
+			_aura_material.set_shader_parameter("intensity", 0.12 * clampf(screen_effects, 0.0, 1.0))
 	if Game.player == null:
 		return
 	_layout_caption()
@@ -1031,6 +1059,9 @@ func _set_figure_dissolve(value: float) -> void:
 	_apparition_dissolve = clampf(value, 0.0, APPARITION_DISSOLVE)
 	if _silhouette:
 		_silhouette.set_shader_parameter("dissolve", _apparition_dissolve)
+	if _figure_aura_light:
+		var reveal := 1.0 - _apparition_dissolve / APPARITION_DISSOLVE
+		_figure_aura_light.light_energy = 0.62 * reveal
 
 
 func _complete_figure_appearance() -> void:

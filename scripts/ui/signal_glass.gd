@@ -30,12 +30,13 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if Game.phase != _last_phase:
 		_refresh_status()
+		_sync_strength()
 	_flicker_left = maxf(_flicker_left - delta, 0.0)
 	_next_flicker -= delta
 	if _next_flicker <= 0.0:
 		_next_flicker = randf_range(5.0, 11.0)
 		_flicker_left = randf_range(0.025, 0.055)
-	if _material:
+	if _material and _glass.visible:
 		_material.set_shader_parameter("burst", 0.22 if _flicker_left > 0.0 else 0.0)
 	if _indicator:
 		_indicator.color = Color(UiChrome.SIGNAL, 0.48 if _flicker_left > 0.0 else 0.82 + sin(Time.get_ticks_msec() * 0.0015) * 0.12)
@@ -145,7 +146,11 @@ func _sync_strength() -> void:
 	if not _material:
 		return
 	var effects := float(Game.settings.screen_effects) if Game.settings else 1.0
+	var active := effects > 0.01 and Game.phase != Game.Phase.BOOT
 	_material.set_shader_parameter("strength", clampf(effects, 0.0, 1.0) * 0.14)
+	# The title and title settings have their own CRT shader. Skip this second
+	# full-screen pass there; the status marks remain part of the menu frame.
+	_glass.visible = active
 	if _status:
 		_status.visible = effects > 0.01
 	if _japanese:

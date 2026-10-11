@@ -14,6 +14,7 @@ signal mode_selected
 var _music: AudioStreamPlayer
 var _eye: ShaderMaterial
 var _glitch: ShaderMaterial
+var _glitch_glass: ColorRect
 var _snow: GPUParticles2D
 var _snow_motion: ParticleProcessMaterial
 var _snow_size := Vector2.ZERO
@@ -60,13 +61,13 @@ func _ready() -> void:
 	_eye.set_shader_parameter("portrait", load("res://assets/ui/mathilda_eye.png"))
 	background.material = _eye
 	add_child(background)
-	var glitch_glass := ColorRect.new()
-	glitch_glass.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	glitch_glass.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_glitch_glass = ColorRect.new()
+	_glitch_glass.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_glitch_glass.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_glitch = ShaderMaterial.new()
 	_glitch.shader = preload("res://shaders/menu_crt.gdshader")
-	glitch_glass.material = _glitch
-	add_child(glitch_glass)
+	_glitch_glass.material = _glitch
+	add_child(_glitch_glass)
 	_sync_glitch()
 	Game.settings.changed.connect(_sync_glitch)
 	_build_snow()
@@ -297,7 +298,9 @@ func _process(delta: float) -> void:
 
 func _sync_glitch() -> void:
 	if _glitch:
-		_glitch.set_shader_parameter("strength", minf(Game.settings.screen_effects * 0.16, 0.16))
+		var strength := minf(Game.settings.screen_effects * 0.16, 0.16)
+		_glitch.set_shader_parameter("strength", strength)
+		_glitch_glass.visible = strength > 0.001
 
 
 func _choose(caption: String) -> void:

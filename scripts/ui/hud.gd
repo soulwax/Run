@@ -12,6 +12,7 @@ var journal: Journal
 var _warning_plate: PanelContainer
 var _warning: Label
 var _murmur_plate: PanelContainer
+var _murmur_header: Label
 var _murmur: Label
 var _prompt_plate: PanelContainer
 var _prompt: HBoxContainer
@@ -46,7 +47,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_feedback_left = maxf(0.0, _feedback_left - delta)
 	var playing := Game.phase == Game.Phase.PLAYING
-	_warning.text = _warning_line()
+	_warning.text = _warning_line().to_upper()
 	_warning_plate.visible = _warning.text != "" and playing
 	if Game.phase != Game.Phase.PAUSED:
 		Game.murmur_left = maxf(0.0, Game.murmur_left - delta)
@@ -54,10 +55,13 @@ func _process(delta: float) -> void:
 	var spoken := Game.murmur_left > 0.0 and Hud.murmur_shown(Game.phase) and Game.settings.subtitles
 	_murmur.add_theme_font_size_override("font_size", Settings.SUBTITLE_SIZES[clampi(Game.settings.subtitle_size, 0, 2)])
 	_murmur.text = Game.murmur if spoken else ""
+	if spoken:
+		var speaker := Game.murmur_speaker.to_upper() if Game.murmur_speaker != "" else ("MATHILDA" if Game.mathilda_pov else "OPHELIA")
+		_murmur_header.text = "VOICE CHANNEL  //  %s" % speaker
 	_murmur_plate.visible = spoken and (Game.dialogue == null or Game.phase != Game.Phase.PLAYING)
 	if spoken:
 		var low := reading or Game.phase == Game.Phase.ESCAPED
-		_murmur_plate.offset_top = -84 if low else -192
+		_murmur_plate.offset_top = -112 if low else -220
 		_murmur_plate.offset_bottom = -24 if low else -132
 	_toast_left = maxf(0.0, _toast_left - delta)
 	_toast.visible = _toast_left > 0.0 and (playing or Game.phase == Game.Phase.READING)
@@ -126,13 +130,13 @@ func _refresh_breath() -> void:
 	_breath.visible = Game.phase == Game.Phase.PLAYING and (Game.settings.breath_meter == 0 or short)
 	if spent:
 		_breath_fill.color = Color(0.86, 0.32, 0.24)
-		_breath_label.text = "Catching breath"
+		_breath_label.text = "BREATH // RECOVER"
 	elif ratio < 0.28:
 		_breath_fill.color = Color(0.9, 0.62, 0.38)
-		_breath_label.text = "Breath"
+		_breath_label.text = "BREATH // LOW"
 	else:
-		_breath_fill.color = Color(0.86, 0.9, 0.94)
-		_breath_label.text = "Breath"
+		_breath_fill.color = UiChrome.BONE
+		_breath_label.text = "BREATH"
 
 
 func _warning_line() -> String:
@@ -331,7 +335,7 @@ func _build_warning() -> void:
 	_warning_plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_warning_plate.visible = false
 	add_child(_warning_plate)
-	_warning = UiChrome.label("", 18, UiChrome.RUST)
+	_warning = UiChrome.term_label("", 14, UiChrome.SIGNAL)
 	_warning.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_warning.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_warning_plate.add_child(_warning)
@@ -344,16 +348,23 @@ func _build_murmur() -> void:
 	_murmur_plate.offset_right = 310
 	_murmur_plate.offset_top = -192
 	_murmur_plate.offset_bottom = -132
-	_murmur_plate.add_theme_stylebox_override("panel", UiChrome.plate(12, 6))
+	var plate := UiChrome.term_box(Color(UiChrome.VOID, 0.86), Color(UiChrome.SIGNAL, 0.42), 1, 14)
+	plate.border_width_left = 3
+	_murmur_plate.add_theme_stylebox_override("panel", plate)
 	_murmur_plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_murmur_plate.visible = false
 	add_child(_murmur_plate)
-	_murmur = UiChrome.label("", 16, UiChrome.PAPER)
+	var stack := VBoxContainer.new()
+	stack.add_theme_constant_override("separation", 6)
+	_murmur_plate.add_child(stack)
+	_murmur_header = UiChrome.term_label("VOICE CHANNEL", 11, UiChrome.SIGNAL)
+	stack.add_child(_murmur_header)
+	_murmur = UiChrome.term_label("", 16, UiChrome.BONE)
 	_murmur.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_murmur.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_murmur.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_murmur.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_murmur.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_murmur_plate.add_child(_murmur)
+	stack.add_child(_murmur)
 
 
 # A light ring on a dark one, so it reads on snow and on the cabin walls.
@@ -380,7 +391,7 @@ func _build_reticle() -> void:
 
 
 func _build_quiver() -> void:
-	_quiver = UiChrome.label("ARROWS  00 / 08", 14, UiChrome.PAPER)
+	_quiver = UiChrome.term_label("ARROWS  00 / 08", 12, UiChrome.BONE)
 	_quiver.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	_quiver.offset_left = -206
 	_quiver.offset_top = -56
@@ -431,7 +442,7 @@ func _build_bottom() -> void:
 	breath_box.add_theme_constant_override("separation", 6)
 	breath_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_breath.add_child(breath_box)
-	_breath_label = UiChrome.label("Breath", 12, UiChrome.MUTED)
+	_breath_label = UiChrome.term_label("BREATH", 10, UiChrome.ASH)
 	breath_box.add_child(_breath_label)
 	var track := Control.new()
 	track.custom_minimum_size = Vector2(240, 8)

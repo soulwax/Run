@@ -164,7 +164,7 @@ func apply_weather(
 	var whiteout_fog := Color(0.90, 0.93, 0.96)
 	_env.fog_light_color = clear_fog.lerp(squall_fog, s).lerp(whiteout_fog, w)
 	if Game.dream_mode:
-		_env.fog_light_color = _env.fog_light_color.lerp(Color(0.40, 0.49, 0.62), 0.36)
+		_env.fog_light_color = _env.fog_light_color.lerp(Color(0.42, 0.38, 0.58), 0.44)
 	_env.fog_light_energy = lerpf(0.95, 1.22, w * 0.7 + g * 0.3)
 	if Game.dream_mode:
 		_env.fog_light_energy *= 0.68
@@ -186,12 +186,14 @@ func apply_weather(
 	var sky_whiteout := Color(0.85, 0.88, 0.92)
 	_env.background_color = sky_clear.lerp(sky_squall, s).lerp(sky_whiteout, w)
 	if Game.dream_mode:
-		_env.background_color = _env.background_color.lerp(Color(0.39, 0.48, 0.62), 0.26)
+		_env.background_color = _env.background_color.lerp(Color(0.40, 0.41, 0.62), 0.34)
 
 	# Outside the fill is the storm's blue. Inside it is a warm bounce, so the
 	# lamps read as a room and the cold is what comes through the door.
 	var outdoor_ambient := Color(0.67, 0.75, 0.85).lerp(Color(0.78, 0.83, 0.89), w)
 	_env.ambient_light_color = outdoor_ambient.lerp(Color(1.0, 0.82, 0.64), indoors)
+	if Game.dream_mode:
+		_env.ambient_light_color = _env.ambient_light_color.lerp(Color(0.54, 0.43, 0.69), 0.18)
 	_env.ambient_light_energy = lerpf(0.92, 0.68, s * 0.7 + w * 0.3) * lerpf(1.0, 0.27, indoors)
 	_env.adjustment_brightness = lerpf(1.04, 0.93, s * 0.65 + w * 0.35) * lerpf(1.0, 0.96, indoors) * (Game.settings.brightness if Game.settings else 1.0)
 	if Game.dream_mode:
